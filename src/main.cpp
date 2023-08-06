@@ -190,7 +190,7 @@ int main() {
     std::vector<glm::vec3> vertices;
     std::vector<Face> faces;
 
-    if (loadOBJ("/Users/estebandonis/Documents/SextoSemestre/GraficasPorComputadora/Laboratorios/SR1/src/RealNave.obj", vertices, faces, 10.0f)) {
+    if (loadOBJ("RealNave.obj", vertices, faces, 10.0f)) {
         // Successfully loaded OBJ file
 
         glm::vec3 translationOffset(FRAMEBUFFER_HEIGHT/2, FRAMEBUFFER_WIDTH/2, 0.0f); // Adjust x and y as needed
