@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <glm.hpp>
+#include "gtx/string_cast.hpp"
 #include <SDL2/SDL.h>
 #include <vector>
 #include <string>
@@ -112,33 +113,34 @@ struct Face {
     std::vector<std::array<int, 3>> vertexIndices;
 };
 
-bool loadOBJ(const std::string& path, std::vector<glm::vec3>& out_vertices, std::vector<Face>& out_faces, float scale) {
+bool loadOBJ(const std::string& path, std::vector<glm::vec3>& out_vertices, std::vector<Face>& out_faces, float scaleFactor = 1.0f) {
     std::ifstream file(path);
     if (!file.is_open()) {
-        std::cerr << "Error opening file: " << path << std::endl;
+        std::cout << "Error opening file: " << path << std::endl;
         return false;
     }
 
     std::string line;
     while (std::getline(file, line)) {
         std::istringstream iss(line);
-        std::string token;
-        iss >> token;
+        std::string type;
+        iss >> type;
 
-        if (token == "v") {
+        if (type == "v") {
             glm::vec3 vertex;
             iss >> vertex.x >> vertex.y >> vertex.z;
-
-            // Apply scaling to the vertex coordinates
-            vertex *= scale;
-
+            vertex *= scaleFactor;  // Escalar el vértice
             out_vertices.push_back(vertex);
-        } else if (token == "f") {
+        }
+        else if (type == "f") {
             Face face;
-            int v1, v2, v3;
-            char slash;
-            while (iss >> v1 >> slash >> v2 >> slash >> v3) {
-                face.vertexIndices.push_back({v1 - 1, v2 - 1, v3 - 1}); // OBJ indices are 1-based
+            std::string indexStr;
+            while (iss >> indexStr) {
+                std::array<int, 3> indices;
+                std::replace(indexStr.begin(), indexStr.end(), '/', ' ');
+                std::istringstream indexIss(indexStr);
+                indexIss >> indices[0] >> indices[1] >> indices[2];
+                face.vertexIndices.push_back(indices);
             }
             out_faces.push_back(face);
         }
@@ -148,33 +150,30 @@ bool loadOBJ(const std::string& path, std::vector<glm::vec3>& out_vertices, std:
     return true;
 }
 
-std::vector<glm::vec3> setupVertexArray(const std::vector<glm::vec3>& vertices, const std::vector<Face>& faces) {
-    std::vector<glm::vec3> vertexArray;
+std::ostream &operator<< (std::ostream &out, const glm::vec3 &vec) {
+    out << "{" 
+        << vec.x << " " << vec.y << " "<< vec.z 
+        << "}";
 
-    // For each face
-    for (const auto& face : faces) {
-        // For each vertex in the face
-        for (const auto& vertexIndices : face.vertexIndices) {
-            // Get the vertex position from the input array using the index from the face
-            glm::vec3 vertexPosition = vertices[vertexIndices[0]];
-
-            // Add the vertex position to the vertex array
-            vertexArray.push_back(vertexPosition);
-        }
-    }
-
-    return vertexArray;
+    return out;
 }
 
-void drawObject(const std::vector<glm::vec3>& combinedVertexArray, const std::vector<Face>& faces) {
-    for (const auto& face : faces) {
-        for (const auto& vertexIndices : face.vertexIndices) {
-            glm::vec3 vertexA = combinedVertexArray[vertexIndices[0]];
-            glm::vec3 vertexB = combinedVertexArray[vertexIndices[1]];
-            glm::vec3 vertexC = combinedVertexArray[vertexIndices[2]];
+void drawObject(const std::vector<glm::vec3>& vertices, const std::vector<Face>& faces) {
+    clear();  // Clear the framebuffer
 
-            triangle(vertexA, vertexB, vertexC);
-        }
+    for (const auto& face : faces) {
+        int index1 = face.vertexIndices[0][0] - 1;
+        int index2 = face.vertexIndices[1][0] - 1;
+        int index3 = face.vertexIndices[2][0] - 1;
+
+
+        // Get the corresponding vertex positions
+        glm::vec3 vertex1 = vertices[index1];
+        glm::vec3 vertex2 = vertices[index2];
+        glm::vec3 vertex3 = vertices[index3];
+
+        // Draw the triangle using the triangle function
+        triangle(vertex1, vertex2, vertex3);
     }
 }
 
@@ -191,22 +190,17 @@ int main() {
     std::vector<glm::vec3> vertices;
     std::vector<Face> faces;
 
-    if (loadOBJ("/Users/estebandonis/Documents/SextoSemestre/GraficasPorComputadora/Ejemplos/Blender/cube.obj", vertices, faces, 80.0f)) {
+    if (loadOBJ("/Users/estebandonis/Documents/SextoSemestre/GraficasPorComputadora/Laboratorios/SR1/src/RealNave.obj", vertices, faces, 10.0f)) {
         // Successfully loaded OBJ file
-        // Now you can use the vertices and faces vectors
-        // ...
-        std::cout << "Leido" << std::endl;
 
-        std::vector<glm::vec3> combinedVertexArray = setupVertexArray(vertices, faces);
-
-        glm::vec3 translationOffset(250, 250, 0.0f); // Adjust x and y as needed
+        glm::vec3 translationOffset(FRAMEBUFFER_HEIGHT/2, FRAMEBUFFER_WIDTH/2, 0.0f); // Adjust x and y as needed
 
         // Apply the translation to each vertex in the combinedVertexArray
-        for (auto& vertex : combinedVertexArray) {
+        for (auto& vertex : vertices) {
             vertex += translationOffset;
         }
 
-        drawObject(combinedVertexArray, faces);
+        drawObject(vertices, faces);
     }
 
 
