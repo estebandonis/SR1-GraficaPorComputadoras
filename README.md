@@ -12,4 +12,5 @@ Y luego ejecutar el siguiente comando en la terminal:
 Al ejecutarlo se verá algo así:
 
 
+![RealNave](https://github.com/estebandonis/SR1-GraficaPorComputadoras/assets/77749546/f4472834-a7bf-4b7b-96f5-6e895c17c550)
 
